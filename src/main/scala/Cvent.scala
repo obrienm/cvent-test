@@ -1,12 +1,12 @@
-import com.cvent.api._2006_11.{CventSessionHeader, V200611, V200611Soap}
+import com.cvent.api._2006_11._
 import com.cvent.schemas.api._2006_11._
+import com.sun.org.apache.xerces.internal.jaxp.datatype.XMLGregorianCalendarImpl
 import java.io.File
 import com.typesafe.config.ConfigFactory
 import Config._
-import java.util.Date
+import java.util.{GregorianCalendar, Date}
 import javax.xml.ws.Holder
 import scala.collection.JavaConversions._
-import com.cvent.api._2006_11.ArrayOfCvObject
 
 object Cvent extends App {
 
@@ -23,7 +23,6 @@ object Cvent extends App {
   cventSessionHeader.setCventSessionValue(session)
   val sessionHeader = new Holder(cventSessionHeader)
 
-
   // get all events
   val searchResults: SearchResult = client.search(CvObjectType.EVENT, new CvSearch(), sessionHeader)
   val eventIds = searchResults.getId().toList
@@ -34,37 +33,36 @@ object Cvent extends App {
     retrieveResult.getCvObject().iterator().toList.asInstanceOf[List[Event]]
   }
   
-//  events.foreach(log)
+  events.foreach(log)
+
+  // copy event
+  val eventParams = new EventParameters()
+  eventParams.setTitle(s"Some event ${new Date()}")
+  eventParams.setEndDate(new XMLGregorianCalendarImpl(new GregorianCalendar(2014, 06, 01)))
+  val parameters = new ArrayOfEventParameters()
+  parameters.getEventParameters.add(eventParams)
+  val copyEventResultArray = client.copyEvent(events(0).getId, parameters, sessionHeader)
+  val results: List[CopyEventResult] = copyEventResultArray.getCopyEventResult.toList
+  results.foreach(res => println(res.getErrors.getError.iterator().toList.foreach(_.getDescription)))
   
-  // register an invitee
-  val invitee = new Invitee()
-  invitee.setFirstName(s"Matthew ${new Date().getTime}")
-  invitee.setLastName("O'Brien")
-  val cvoa = new ArrayOfCvObject()
-  cvoa.getCvObject.add(invitee)
-  val simpleEventRegistrationResultArray: SimpleEventRegistrationResultArray = client.simpleEventRegistration(cvoa, RegistrationAction.REGISTER, events(0).getId, "", sessionHeader)
-  val simpleEventRegistrationResults: List[SimpleEventRegistrationResult] = simpleEventRegistrationResultArray.getSimpleEventRegistrationResult.iterator().toList
-  simpleEventRegistrationResults.foreach(_.isSuccess)
+//  // register an invitee
+//  val invitee = new Invitee()
+//  invitee.setFirstName(s"Matthew ${new Date().getTime}")
+//  invitee.setLastName("O'Brien")
+//  val cvoa = new ArrayOfCvObject()
+//  cvoa.getCvObject.add(invitee)
+//  val simpleEventRegistrationResultArray: SimpleEventRegistrationResultArray = client.simpleEventRegistration(cvoa, RegistrationAction.REGISTER, events(0).getId, "", sessionHeader)
+//  val simpleEventRegistrationResults: List[SimpleEventRegistrationResult] = simpleEventRegistrationResultArray.getSimpleEventRegistrationResult.iterator().toList
+//  simpleEventRegistrationResults.foreach(_.isSuccess)
   
   private def log(event: Event) = {
     println(s"Id: ${event.getId}")
-    println(s"Capacity: ${event.getCapacity}")
-    println(s"Category: ${event.getCategory}")
-    println(s"ClosedBy: ${event.getClosedBy}")
+    println(s"EventTitle: ${event.getEventTitle}")
     println(s"EventCode: ${event.getEventCode}")
     println(s"EventDescription: ${event.getEventDescription}")
     println(s"EventEndDate: ${event.getEventEndDate}")
     println(s"EventLaunchDate: ${event.getEventLaunchDate}")
     println(s"EventStartDate: ${event.getEventStartDate}")
-    println(s"EventStatus: ${event.getEventStatus}")
-    println(s"EventTitle: ${event.getEventTitle}")
-    println(s"LastModifiedDate: ${event.getLastModifiedDate}")
-    println(s"Location: ${event.getLocation}")
-    println(s"PlannerEmailAddress: ${event.getPlannerEmailAddress}")
-    println(s"PostalCode: ${event.getPostalCode}")
-    println(s"StreetAddress1: ${event.getStreetAddress1}")
-    println(s"StreetAddress2: ${event.getStreetAddress2}")
-    println(s"StreetAddress3: ${event.getStreetAddress3}")
   }
 }
 
